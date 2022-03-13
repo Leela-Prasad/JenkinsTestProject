@@ -3,6 +3,6 @@ node {
 		git 'https://github.com/Leela-Prasad/JenkinsTestProject.git'
 	}
 	stage('Build') {
-		 sh "mvn clean package"
+		 bat "mvn clean package"
 	}
 }
