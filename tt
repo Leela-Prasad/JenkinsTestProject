@@ -1,0 +1,283 @@
+To send a SOAP request using a certificate, username, password, and expiry, you will need to follow these steps:
+
+1. Obtain the certificate from a trusted certificate authority and install it on your machine.
+2. Create a SOAP request with the necessary headers and content.
+3. Add a security header to the SOAP request that includes the username and password for authentication.
+4. Include the certificate in the security header to encrypt the message and ensure its authenticity.
+5. Add an expiry time to the security header to limit the validity of the message.
+
+Here's an example SOAP request that includes a security header with a certificate, username, password, and expiry:
+
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+   <soap:Header>
+      <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+         <wsse:UsernameToken>
+            <wsse:Username>your_username</wsse:Username>
+            <wsse:Password>your_password</wsse:Password>
+            <wsse:Nonce>some_nonce_value</wsse:Nonce>
+            <wsu:Created>2023-02-27T14:30:00Z</wsu:Created>
+         </wsse:UsernameToken>
+         <wsse:BinarySecurityToken valueType="X.509" EncodingType="wsse:Base64Binary">encoded_certificate</wsse:BinarySecurityToken>
+         <wsu:Timestamp wsu:Id="TS-1">
+            <wsu:Created>2023-02-27T14:30:00Z</wsu:Created>
+            <wsu:Expires>2023-02-27T14:40:00Z</wsu:Expires>
+         </wsu:Timestamp>
+      </wsse:Security>
+   </soap:Header>
+   <soap:Body>
+      <!-- Your SOAP request body goes here -->
+   </soap:Body>
+</soap:Envelope>
+
+
+
+In the above example, replace "your_username" and "your_password" with your actual username and password, and replace "encoded_certificate" with the base64-encoded certificate. Also, update the nonce and timestamp values as appropriate.
+
+
+Sure, here is a Java program that demonstrates how to send a SOAP request with a security header that includes a certificate, username, password, and expiry:
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.net.URL;
+import java.security.KeyStore;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.HttpsURLConnection;
+
+import org.apache.commons.codec.binary.Base64;
+
+public class SoapRequestWithCertificate {
+
+    public static void main(String[] args) throws Exception {
+
+        // Replace with the URL of the SOAP service
+        URL url = new URL("https://example.com/soap-service");
+
+        // Replace with the path to your certificate file
+        String certificatePath = "/path/to/certificate.crt";
+
+        // Replace with your username and password
+        String username = "your_username";
+        String password = "your_password";
+
+        // Replace with the expiry time in milliseconds
+        long expiryTimeMillis = System.currentTimeMillis() + 10 * 60 * 1000; // 10 minutes from now
+
+        // Load the certificate from file
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        InputStream certInputStream = new FileInputStream(certificatePath);
+        X509Certificate cert = (X509Certificate) cf.generateCertificate(certInputStream);
+
+        // Create a keystore containing the certificate
+        KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+        keystore.load(null, null);
+        keystore.setCertificateEntry("certificate", cert);
+
+        // Set up a HTTPS connection
+        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+        conn.setSSLSocketFactory(SSLUtil.getSSLContext(keystore).getSocketFactory());
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "text/xml; charset=utf-8");
+        conn.setRequestProperty("SOAPAction", "http://example.com/soap-action");
+
+        // Create the SOAP request body
+        String soapRequest = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+                + "<soapenv:Header>"
+                + "<wsse:Security xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\">"
+                + "<wsse:UsernameToken>"
+                + "<wsse:Username>" + username + "</wsse:Username>"
+                + "<wsse:Password>" + password + "</wsse:Password>"
+                + "<wsse:Nonce>" + generateNonce() + "</wsse:Nonce>"
+                + "<wsu:Created>" + formatDate(System.currentTimeMillis()) + "</wsu:Created>"
+                + "</wsse:UsernameToken>"
+                + "<wsse:BinarySecurityToken ValueType=\"X509v3\" EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">"
+                + new String(Base64.encodeBase64(cert.getEncoded())) + "</wsse:BinarySecurityToken>"
+                + "<wsu:Timestamp wsu:Id=\"Timestamp-" + System.currentTimeMillis() + "\">"
+                + "<wsu:Created>" + formatDate(System.currentTimeMillis()) + "</wsu:Created>"
+                + "<wsu:Expires>" + formatDate(expiryTimeMillis) + "</wsu:Expires>"
+                + "</wsu:Timestamp>"
+                + "</wsse:Security>"
+                + "</soapenv:Header>"
+                + "<soapenv:Body>"
+                + "<example:SomeSoapRequest xmlns:example=\"http://example.com/namespace\">"
+
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.URL;
+import java.security.KeyStore;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.soap.MessageFactory;
+import javax.xml.soap.SOAPBody;
+import javax.xml.soap.SOAPConstants;
+import javax.xml.soap.SOAPElement;
+import javax.xml.soap.SOAPEnvelope;
+import javax.xml.soap.SOAPHeader;
+import javax.xml.soap.SOAPMessage;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+public class SOAPRequestWithCertificate {
+
+    public static void main(String[] args) throws Exception {
+        String username = "your_username";
+        String password = "your_password";
+        String certificatePath = "path_to_your_certificate_file";
+        String certificatePassword = "your_certificate_password";
+        String soapEndpointUrl = "https://your_soap_endpoint_url";
+        String soapAction = "your_soap_action";
+
+        // Load the certificate from the file
+        InputStream inputStream = SOAPRequestWithCertificate.class.getClassLoader().getResourceAsStream(certificatePath);
+        X509Certificate certificate = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(inputStream);
+
+        // Load the keystore with the certificate
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        keyStore.load(null, certificatePassword.toCharArray());
+        keyStore.setCertificateEntry("alias", certificate);
+
+        // Set up the key manager factory with the keystore
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        keyManagerFactory.init(keyStore, certificatePassword.toCharArray());
+
+        // Set up the trust manager factory with the default truststore
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init((KeyStore) null);
+
+        // Set up the SSL context with the key manager and trust manager factories
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
+
+        // Create the SOAP message
+        MessageFactory messageFactory = MessageFactory.newInstance(SOAPConstants.SOAP_1_2_PROTOCOL);
+        SOAPMessage soapMessage = messageFactory.createMessage();
+
+        // Add the security header to the SOAP message
+        SOAPHeader soapHeader = soapMessage.getSOAPHeader();
+        soapHeader.setPrefix("wsse");
+        soapHeader.addNamespaceDeclaration("wsse", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
+
+        SOAPElement securityElement = soapHeader.addChildElement("Security", "wsse");
+        securityElement.addAttribute(soapHeader.createName("mustUnderstand"), "1");
+        securityElement.addNamespaceDeclaration("wsu", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd");
+
+        SOAPElement usernameTokenElement = securityElement.addChildElement("UsernameToken", "wsse");
+        usernameTokenElement.addAttribute(soapHeader.createName("wsu:Id"), "UsernameToken-1");
+        usernameTokenElement.addNamespaceDeclaration("wsu", "http://docs.oasis-open.org/wss/200
+
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.URL;
+import java.security.KeyStore;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.soap.MessageFactory;
+import javax.xml.soap.SOAPBody;
+import javax.xml.soap.SOAPConstants;
+import javax.xml.soap.SOAPElement;
+import javax.xml.soap.SOAPEnvelope;
+import javax.xml.soap.SOAPHeader;
+import javax.xml.soap.SOAPMessage;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+public class SOAPRequestWithCertificate {
+
+    public static void main(String[] args) throws Exception {
+        String username = "your_username";
+        String password = "your_password";
+        String certificatePath = "path_to_your_certificate_file";
+        String certificatePassword = "your_certificate_password";
+        String soapEndpointUrl = "https://your_soap_endpoint_url";
+        String soapAction = "your_soap_action";
+
+        // Load the certificate from the file
+        InputStream inputStream = SOAPRequestWithCertificate.class.getClassLoader().getResourceAsStream(certificatePath);
+        X509Certificate certificate = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(inputStream);
+
+        // Load the keystore with the certificate
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        keyStore.load(null, certificatePassword.toCharArray());
+        keyStore.setCertificateEntry("alias", certificate);
+
+        // Set up the key manager factory with the keystore
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        keyManagerFactory.init(keyStore, certificatePassword.toCharArray());
+
+        // Set up the trust manager factory with the default truststore
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init((KeyStore) null);
+
+        // Set up the SSL context with the key manager and trust manager factories
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
+
+        // Create the SOAP message
+        MessageFactory messageFactory = MessageFactory.newInstance(SOAPConstants.SOAP_1_2_PROTOCOL);
+        SOAPMessage soapMessage = messageFactory.createMessage();
+
+        // Add the security header to the SOAP message
+        SOAPHeader soapHeader = soapMessage.getSOAPHeader();
+        soapHeader.setPrefix("wsse");
+        soapHeader.addNamespaceDeclaration("wsse", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
+
+        SOAPElement securityElement = soapHeader.addChildElement("Security", "wsse");
+        securityElement.addAttribute(soapHeader.createName("mustUnderstand"), "1");
+        securityElement.addNamespaceDeclaration("wsu", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd");
+
+        SOAPElement usernameTokenElement = securityElement.addChildElement("UsernameToken", "wsse");
+        usernameTokenElement.addAttribute(soapHeader.createName("wsu:Id"), "UsernameToken-1");
+        usernameTokenElement.addNamespaceDeclaration("wsu", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity
+
+
+
+// Create the SOAP message
+MessageFactory messageFactory = MessageFactory.newInstance(SOAPConstants.SOAP_1_2_PROTOCOL);
+SOAPMessage soapMessage = messageFactory.createMessage();
+
+// Add the security header to the SOAP message
+SOAPHeader soapHeader = soapMessage.getSOAPHeader();
+soapHeader.setPrefix("wsse");
+soapHeader.addNamespaceDeclaration("wsse", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
+
+SOAPElement securityElement = soapHeader.addChildElement("Security", "wsse");
+securityElement.addAttribute(soapHeader.createName("mustUnderstand"), "1");
+securityElement.addNamespaceDeclaration("wsu", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd");
+
+SOAPElement usernameTokenElement = securityElement.addChildElement("UsernameToken", "wsse");
+usernameTokenElement.addAttribute(soapHeader.createName("wsu:Id"), "UsernameToken-1");
+usernameTokenElement.addNamespaceDeclaration("wsu", "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd");
+
+SOAPElement usernameElement = usernameTokenElement.addChildElement("Username", "wsse");
+usernameElement.setValue(username);
+
+SOAPElement passwordElement = usernameTokenElement.addChildElement("Password", "wsse");
+passwordElement.addAttribute(soapHeader.createName("Type"), "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText");
+passwordElement.setValue(password);
+
+// Add the SOAP body to the SOAP message
+SOAPBody soapBody = soapMessage.getSOAPBody();
+soapBody.setPrefix("soapenv");
+soapBody.addNamespaceDeclaration("soapenv", "http://www.w3.org/2003/05/soap-envelope");
+
+
+This code constructs a SOAP header with a security element that contains a username token. The username and password values are set to the values you passed in as parameters. You can modify this code as necessary to include additional security information in the SOAP header, such as timestamps, nonces, or other authentication information.
