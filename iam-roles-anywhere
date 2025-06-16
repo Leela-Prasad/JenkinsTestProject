@@ -1,0 +1,107 @@
+	1. Create a Config File: openssl-ca.cnf
+	
+	[ req ]
+	default_bits       = 2048
+	prompt             = no
+	default_md         = sha256
+	x509_extensions    = v3_ca
+	distinguished_name = dn
+	
+	[ dn ]
+	C  = IN
+	ST = Tamilnadu
+	L  = Chennai
+	O  = AstraZeneca
+	OU = Commercial
+	CN = godaddy.com
+	
+	[ v3_ca ]
+	subjectKeyIdentifier = hash
+	authorityKeyIdentifier = keyid:always,issuer
+	basicConstraints = critical, CA:true
+	keyUsage = critical, keyCertSign, cRLSign
+	
+	
+	2. Generate the CA Private Key
+	openssl genrsa -out root-ca-key.pem 2048
+	
+	3. Generate the Self-Signed CA Certificate
+	openssl req -x509 -new -key root-ca-key.pem -days 3650 -out root-ca.pem -config openssl-ca.cnf
+	
+	4. Paste the contents of root-ca.pem in trust anchor body
+
+	5. Create a Role with this trust relationship
+	{
+		"Version": "2012-10-17",
+		"Statement": [
+			{
+				"Sid": "Statement1",
+				"Effect": "Allow",
+				"Principal": {
+					"Service": "rolesanywhere.amazonaws.com"
+				},
+				"Action": [
+					"sts:AssumeRole",
+					"sts:TagSession",
+					"sts:SetSourceIdentity"
+				],
+				"Condition": {
+					"ArnEquals": {
+						"aws:SourceArn": "arn:aws:rolesanywhere:ap-south-1:117915829123:trust-anchor/449a897f-036c-432d-a3b7-df9743be6c47"
+					}
+				}
+			}
+		]
+	}
+	
+	
+	6. Create a Profile with the above role
+	7. Generate Client Certificate
+	
+	8. Generate the Client Key
+	openssl genrsa -out client-key.pem 2048
+	
+	9. Create a Certificate Signing Request (CSR)
+	openssl req -new -key client-key.pem -out client.csr
+	
+	10. Create an OpenSSL Config for Client Extensions (openssl-client.cnf)
+	[ v3_req ]
+	basicConstraints = CA:FALSE
+	keyUsage = critical, digitalSignature, keyEncipherment
+	extendedKeyUsage = clientAuth
+	
+	11. Sign the CSR with the CA to Get the Client Certificate
+	openssl x509 -req -in client.csr -CA root-ca.pem -CAkey root-ca-key.pem -CAcreateserial -out client-cert.pem -days 365 -sha256 -extfile openssl-client.cnf -extensions v3_req
+
+	12. Download AWS Signing helper executable
+	https://rolesanywhere.amazonaws.com/releases/1.7.0/X86_64/Windows/aws_signing_helper.exe
+	
+	13. Execute below command
+	./aws_signing_helper credential-process \
+	    --certificate client-cert.pem \
+	    --private-key client-key.pem \
+	    --role-arn arn:aws:iam::117915829123:role/S3FullAccessWithRolesAnywhereTrust \
+	    --trust-anchor-arn arn:aws:rolesanywhere:ap-south-1:117915829123:trust-anchor/449a897f-036c-432d-a3b7-df9743be6c47 \
+	    --profile-arn arn:aws:rolesanywhere:ap-south-1:117915829123:profile/6084d5fe-9b94-4cdc-903a-31b2267f4c77
+	
+	
+	14. Set the Environment variables
+	export AWS_ACCESS_KEY_ID=
+	export AWS_SECRET_ACCESS_KEY=
+	export AWS_SESSION_TOKEN=
+	
+	
+	15. Restricting to specific bucket
+	{
+	  "Version":"2012-10-17",
+	  "Statement":[
+	    {
+	      "Effect":"Allow",
+	      "Action":"*",
+	      "Resource":[
+	          "arn:aws:s3:::springboot-microservices-artifacts",
+	          "arn:aws:s3:::springboot-microservices-artifacts/*"
+	          ]
+	    }
+	  ]
+	}
